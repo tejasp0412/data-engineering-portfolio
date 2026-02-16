@@ -2,7 +2,7 @@
 
 ## 🚀 Featured Projects
 
-### 1. [E-Commerce Analytics Platform (dbt & DuckDB)](./e-commerce-dbt-project)
+### 1. [E-Commerce Analytics Platform (dbt & DuckDB)](./ecommerce-dbt-project)
 *A production-grade transformation pipeline built with dbt Core.*
 
 This project demonstrates advanced data modeling techniques using real-world Brazilian E-Commerce data. It implements a full **ELT pipeline** transforming raw CSV data into a Star Schema optimized for analytics.

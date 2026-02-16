@@ -1,0 +1,65 @@
+version: 2
+
+models:
+  - name: stg_orders
+    description: "This is staging cleaned orders data, ready for transformation."
+    columns:
+      - name: order_id
+        description: "Unique identifier for each order."
+        tests:
+          - unique
+          - not_null
+      - name: order_status
+        description: "Status of the order (e.g., delivered, canceled)."
+        tests:
+          - accepted_values:
+              values: ['DELIVERED', 'SHIPPED', 'CANCELED', 'UNAVAILABLE', 'INVOICED', 'PROCESSING', 'CREATED', 'APPROVED']
+
+  - name: stg_customers
+    description: "This is staging cleaned customers data, ready for transformation."
+    columns:
+      - name: customer_id
+        description: "Unique identifier for each customer."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_products
+    description: "This is staging cleaned products data, ready for transformation."
+    columns:
+      - name: product_id
+        description: "Unique identifier for each product."
+        tests:
+          - unique
+          - not_null
+
+  - name: stg_payments
+    description: "This is staging cleaned payments data, ready for transformation."
+    columns:
+      - name: order_id
+        description: "Identifier for the order associated with the payment."
+        tests:
+          - not_null
+
+  - name: stg_order_items
+    description: "This is staging cleaned order items data, ready for transformation."
+    columns:
+      - name: order_id
+        description: "Identifier for the order associated with the item."
+        tests:
+          - not_null
+      - name: product_id
+        description: "Identifier for the product associated with the item."
+        tests:
+          - not_null
+  - name: stg_brl_usd_exchange_rate
+    description: "This is staging cleaned BRL to USD exchange rate data, ready for transformation."
+    columns:
+      - name: rate_date
+        description: "Date of the exchange rate."
+        tests:
+          - not_null
+      - name: exchange_rate_to_usd
+        description: "Exchange rate from BRL to USD."
+        tests:
+          - not_null

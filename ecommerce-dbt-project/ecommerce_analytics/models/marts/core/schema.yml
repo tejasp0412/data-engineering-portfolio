@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Customer dimension with lifetime metrics."
+    columns:
+      - name: customer_key
+        description: "Surrogate Key"
+        tests:
+          - unique
+          - not_null 
+      - name: customer_unique_id
+        description: "Unique identifier for each customer across all orders."
+        tests:
+          - unique
+          - not_null
+      - name: customer_segment
+        description: "Customer segment based on total spend and order frequency."
+        tests:
+          - accepted_values:
+              values: ['VIP', 'LOYAL', 'NEW', 'PROSPECT']
+
+  - name: dim_products
+    description: "Product dimension with category and price information."
+    columns:
+      - name: product_key
+        description: "Surrogate Key"
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_orders
+    description: "Fact table with order details and metrics."
+    columns:
+      - name: order_id
+        desctiption: "Unique identifier for each order."
+        tests:
+          - unique
+          - not_null
+      - name: customer_key
+        description: "Foreign key to the customer dimension."
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
+
+  - name: fct_daily_revenue
+    description: "Daily Revenue Metrics."
+    columns:
+      - name: order_date
+        description: "Date of the order."
+        tests:
+          - unique
+          - not_null

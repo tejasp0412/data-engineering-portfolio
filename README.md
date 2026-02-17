@@ -1,6 +1,6 @@
 # data-engineering-portfolio
 
-## 🚀 Featured Projects
+## Featured Projects
 
 ### 1. [E-Commerce Analytics Platform (dbt & DuckDB)](./ecommerce-dbt-project)
 *A production-grade transformation pipeline built with dbt Core.*
@@ -18,7 +18,7 @@ This project demonstrates advanced data modeling techniques using real-world Bra
 
 ---
 
-## 🚧 Roadmap / Upcoming Projects
+## Roadmap / Upcoming Projects
 
 I am continuously building to stay on the cutting edge of the Modern Data Stack. Here is what is currently in the lab:
 

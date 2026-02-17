@@ -60,25 +60,3 @@ Tech Stack
 dbt Core — Transformation framework
 DuckDB — Local analytical database
 GitHub Actions — CI/CD
-
----
-
-## Final Checklist
-
-| Item | Status |
-|------|--------|
-| dbt project initialized | ☐ |
-| Seeds loaded (raw data) | ☐ |
-| Sources configured | ☐ |
-| Staging models built | ☐ |
-| Intermediate models built | ☐ |
-| Mart models built | ☐ |
-| Custom macros created | ☐ |
-| Tests added and passing | ☐ |
-| Documentation generated | ☐ |
-| GitHub repo created | ☐ |
-| CI/CD workflow added | ☐ |
-| README written | ☐ |
-| Lineage screenshot saved | ☐ |
-
----

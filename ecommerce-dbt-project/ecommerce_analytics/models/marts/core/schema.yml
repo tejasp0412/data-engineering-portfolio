@@ -2,54 +2,59 @@ version: 2
 
 models:
   - name: dim_customers
-    description: "Customer dimension with lifetime metrics."
+    description: "Account holder dimension with lifetime payment metrics and segmentation for the Utility Marketplace Platform."
     columns:
       - name: customer_key
-        description: "Surrogate Key"
+        description: "Surrogate key for the account holder."
         tests:
           - unique
           - not_null 
       - name: customer_unique_id
-        description: "Unique identifier for each customer across all orders."
+        description: "Natural key — deduplicated account holder ID across all transactions."
         tests:
           - unique
           - not_null
       - name: customer_segment
-        description: "Customer segment based on total spend and order frequency."
+        description: "Account holder value segment based on transaction volume and frequency: VIP, LOYAL, ACTIVE, PROSPECT."
         tests:
           - accepted_values:
-              values: ['VIP', 'LOYAL', 'NEW', 'PROSPECT']
+              arguments:
+                values: ['VIP', 'LOYAL', 'ACTIVE', 'PROSPECT']
 
   - name: dim_products
-    description: "Product dimension with category and price information."
+    description: "Utility service type dimension with product performance metrics."
     columns:
       - name: product_key
-        description: "Surrogate Key"
+        description: "Surrogate key for the utility service type."
         tests:
           - unique
           - not_null
 
   - name: fct_orders
-    description: "Fact table with order details and metrics."
+    description: "Transaction-grain fact table for all payment transactions on the Utility Marketplace Platform."
     columns:
       - name: order_id
-        desctiption: "Unique identifier for each order."
+        description: "Unique identifier for each payment transaction."
         tests:
           - unique
           - not_null
       - name: customer_key
-        description: "Foreign key to the customer dimension."
+        description: "Surrogate key for the account holder."
+        tests:
+          - not_null
+      - name: customer_unique_id
+        description: "Natural key for the account holder."
         tests:
           - not_null
           - relationships:
               to: ref('dim_customers')
-              field: customer_key
+              field: customer_unique_id
 
   - name: fct_daily_revenue
-    description: "Daily Revenue Metrics."
+    description: "Daily aggregated transaction and revenue metrics for the Utility Marketplace Platform."
     columns:
       - name: order_date
-        description: "Date of the order."
+        description: "Calendar date of the aggregated transactions."
         tests:
           - unique
           - not_null

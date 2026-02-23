@@ -2,64 +2,74 @@ version: 2
 
 models:
   - name: stg_orders
-    description: "This is staging cleaned orders data, ready for transformation."
+    description: "Staged and cleaned payment transactions (orders) for the Utility Marketplace Platform."
     columns:
       - name: order_id
-        description: "Unique identifier for each order."
+        description: "Unique identifier for each payment transaction."
         tests:
           - unique
           - not_null
       - name: order_status
-        description: "Status of the order (e.g., delivered, canceled)."
+        description: "Current status of the payment transaction."
         tests:
           - accepted_values:
-              values: ['DELIVERED', 'SHIPPED', 'CANCELED', 'UNAVAILABLE', 'INVOICED', 'PROCESSING', 'CREATED', 'APPROVED']
+              arguments:
+                values: ['DELIVERED', 'SHIPPED', 'CANCELED', 'UNAVAILABLE', 'INVOICED', 'PROCESSING', 'CREATED', 'APPROVED']
 
   - name: stg_customers
-    description: "This is staging cleaned customers data, ready for transformation."
+    description: "Staged and cleaned account holder (customer) data."
     columns:
       - name: customer_id
-        description: "Unique identifier for each customer."
+        description: "Unique identifier for each account holder."
         tests:
           - unique
           - not_null
+      - name: customer_unique_id
+        description: "Deduplicated unique identifier for an account holder across multiple orders."
 
   - name: stg_products
-    description: "This is staging cleaned products data, ready for transformation."
+    description: "Staged and cleaned utility service types (products)."
     columns:
       - name: product_id
-        description: "Unique identifier for each product."
+        description: "Unique identifier for each utility service type."
         tests:
           - unique
           - not_null
 
   - name: stg_payments
-    description: "This is staging cleaned payments data, ready for transformation."
+    description: "Staged and cleaned payment method records per transaction."
     columns:
       - name: order_id
-        description: "Identifier for the order associated with the payment."
+        description: "Foreign key to the associated payment transaction."
         tests:
           - not_null
+      - name: payment_type
+        description: "Method used for payment (e.g., CREDIT_CARD, BOLETO, VOUCHER, DEBIT_CARD)."
+      - name: payment_installments
+        description: "Number of installments for the payment. 1 = single payment."
+      - name: payment_value
+        description: "Payment amount in BRL for this payment sequence."
 
   - name: stg_order_items
-    description: "This is staging cleaned order items data, ready for transformation."
+    description: "Staged and cleaned line items per transaction (utility service charges)."
     columns:
       - name: order_id
-        description: "Identifier for the order associated with the item."
+        description: "Foreign key to the associated payment transaction."
         tests:
           - not_null
       - name: product_id
-        description: "Identifier for the product associated with the item."
+        description: "Foreign key to the utility service type."
         tests:
           - not_null
   - name: stg_brl_usd_exchange_rate
-    description: "This is staging cleaned BRL to USD exchange rate data, ready for transformation."
+    description: "Daily BRL to USD exchange rates used for currency normalisation."
     columns:
       - name: rate_date
         description: "Date of the exchange rate."
         tests:
           - not_null
+          - unique
       - name: exchange_rate_to_usd
-        description: "Exchange rate from BRL to USD."
+        description: "Conversion rate from BRL to USD for the given date."
         tests:
           - not_null

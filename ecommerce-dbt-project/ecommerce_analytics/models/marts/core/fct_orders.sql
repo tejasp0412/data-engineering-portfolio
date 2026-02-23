@@ -23,11 +23,11 @@ final as (
         customer_city,
         customer_state,
         order_status,
+        primary_payment_type,
 
-        --Timestamps
+        -- Timestamps
         order_purchased_at,
         order_approved_at,
-        --order_shipped_at,
         order_delivered_carrier_date,
         order_delivered_customer_date,
         order_estimated_delivery_date,
@@ -37,26 +37,34 @@ final as (
         date_trunc('month', order_purchased_at) as order_month,
         date_trunc('year', order_purchased_at) as order_year,
 
-        --Metrics
+        -- Transaction Financials (BRL)
         total_items,
-        total_item_price,
+        total_item_price_brl,
+        total_freight_brl,
+        order_total_brl,
+        total_paid_brl,
+
+        -- Transaction Financials (USD)
         total_item_price_usd,
-        total_freight,
         total_freight_usd,
-        order_total,
         order_total_usd,
-        total_paid,
+        total_paid_usd,
+
+        -- Payment Details
         payment_method_used,
+        max_installments,
+        is_installment_payment,
 
-        --Delivery Metrics
-        --days_to_ship,
+        -- Delivery Metrics
         days_to_deliver,
+        days_to_approval,
 
-        --Flags
-        case when order_status = 'DELIVERED' then true else false end as is_delivered,
-        case when order_status = 'CANCELED' then true else false end as is_canceled,
+        -- Flags (use lowercase to match stg_orders output)
+        is_delivered,
+        is_failed_transaction,
         case 
-            when days_to_deliver > {{ datediff('order_purchased_at', 'order_estimated_delivery_date', 'day') }} then true else false
+            when days_to_deliver > {{ datediff('order_purchased_at', 'order_estimated_delivery_date', 'day') }} 
+            then true else false 
         end as is_late_delivery,
 
         current_timestamp as updated_at

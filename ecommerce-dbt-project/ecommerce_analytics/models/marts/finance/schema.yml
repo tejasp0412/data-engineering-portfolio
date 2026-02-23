@@ -1,0 +1,246 @@
+version: 2
+
+models:
+  - name: fct_payment_operations
+    description: | 
+      Transaction-grain KPI model for Payment Operations reporting on the Utility Marketplace Platform.
+      One row per payment transaction. Primary source for KPIs 1–6 and 10.
+      
+      Currency: All USD values use daily BRL/USD exchange rate. Orders with no matching rate date default to 0 (documented in int_orders_enriched).
+
+    columns:
+      - name: order_id
+        description: "Unique identifier for each payment transaction."
+        tests: 
+          - unique
+          - not_null
+       
+      # KPI 1: Total Payment Volume (TPV)
+      - name: transaction_value_usd
+        description: | 
+          KPI 1 — Total Payment Volume (TPV) at transaction grain.
+          
+          Business Definiton: The total monetary value of payments processed through the platform, expressed in USD.
+          
+          Formula: SUM(payment_value_brl) * exchange_rate_to_usd
+          
+          Aggregation: SUM(transaction_value_usd) across any slice = TPV for that slice.
+        tests:
+          - not_null
+
+      # KPI 2: Processing Fee Yield
+      - name: processing_fee_usd
+        description: | 
+          KPI 2 component — Processing fee in USD per transaction. Mapped from freight_value which represents platform service charges.
+          Formula: total_freight_brl * exchange_rate_to_usd
+      
+      - name: processing_fee_pct
+        description: |
+          KPI 2 — Processing Fee Yield (%).
+          Business Definition: The platform's take rate expressed as a percentage of total transaction value. Represents revenue from service charges relative to gross payment volume.
+          Formula: total_freight_usd / total_paid_usd * 100
+
+      # KPI 3: Service Revenue
+      - name: service_revenue_usd
+        description: | 
+          KPI 3 — Service Revenue (USD).
+          
+          Business Definition: Revenue from utility services delivered, net of processing/freight charges.
+          
+          Formula: total_item_price_usd (excludes freight)
+          
+          Note: Gross Revenue = service_revenue_usd + processing_fee_usd
+
+      # KPI 4: Days to Payment Approval
+      - name: days_to_approval
+        description: | 
+          KPI 4 — Days to Payment Approval.
+          
+          Business Definition: Number of calendar days between transaction initiation and payment approval by the platform/gateway.
+          
+          Formula: DATE_DIFF('day', order_purchased_at, order_approved_at)
+
+      - name: is_approval_sla_breached
+        description: |
+          KPI 4 derived flag — True if days_to_approval > 2 calendar days. Used to calculate SLA Breach Rate in dashboards.
+          
+          Formula: CASE WHEN days_to_approval > 2 THEN true ELSE false END
+
+      # KPI 5: Days to Delivery + Late Delivery Rate
+      - name: days_to_deliver
+        description: | 
+          KPI 5 — Days to Delivery. 
+          
+          Business Definition: Calendar days from transaction initiation to physical delivery to the account holder.
+          
+          Formula: DATE_DIFF('day', order_purchased_at, order_delivered_customer_date)
+
+      - name: is_late_delivery
+        description: | 
+          KPI 5 derived flag — True if actual delivery exceeded estimated delivery date.
+          
+          Formula: days_to_deliver > DATE_DIFF('day', order_purchased_at, order_estimated_delivery_date)
+
+      # KPI 6: Payment Installment Rate
+      - name: is_installment_payment
+        description: | 
+          KPI 6 component — True if transaction used more than 1 installment.
+          
+          Formula: CASE WHEN max_installments > 1 THEN true ELSE false END
+
+      - name: max_installments
+        description: | 
+          KPI 6 — Payment Installment Rate (input field).
+          
+          Business Definition: Maximum number of installments used for this transaction. 
+          Installment payments indicate credit usage and carry higher default/failure risk.
+          
+          Aggregation: AVG(max_installments) = avg installment plan length
+          SUM(is_installment_payment) / COUNT(*) = installment rate %
+          
+          Risk Note: Customers with installment_rate > 75% flagged as High Risk
+          in fct_customer_kpis.
+
+      # KPI 10: Monthly TPV + Monthly Transaction Success Rate
+      - name: monthly_tpv_usd
+        description: | 
+          KPI 10 component — Total Payment Volume for the calendar month of this transaction. Denormalised from monthly_context CTE for
+          dashboard convenience (avoids joins in Power BI).
+
+          Formula: SUM(total_paid_usd) GROUP BY date_trunc('month', order_purchased_at)
+
+      - name: monthly_success_rate_pct
+        description: |
+          KPI 10 — Monthly Transaction Success Rate (%).
+
+          Business Definition: Percentage of transactions in a given month that were successfully delivered to the account holder.
+
+          Formula: COUNT(DISTINCT delivered_order_id) / COUNT(DISTINCT order_id) * 100 
+                  grouped by calendar month
+
+      - name: pct_of_monthly_tpv
+        description: |
+          Window KPI — This transaction's share of its month's total TPV.
+          
+          Formula: transaction_value_usd / monthly_tpv_usd * 100
+          
+          Useful for: identifying outlier high-value transactions within a month.
+
+  - name: fct_customer_kpis
+    description: |
+      Customer-grain KPI model for CLV, retention, and risk analytics. One row per unique account holder (customer_unique_id).
+      Primary source for KPIs 7–9 and 11–12.
+    
+    columns: 
+      - name: customer_unique_id
+        description: "Natural key — one row per unique account holder."
+        tests: 
+          - unique
+          - not_null
+
+      # KPI 7 — Customer Lifetime Value (CLV) in USD.
+      - name: clv_used
+        description: | 
+          Business Definition: The total historical payment value attributed to a single account holder across all transactions on the platform.
+          
+          Formula: SUM(total_paid_usd) per customer_unique_id
+
+      - name: clv_percentile_tier
+        description: | 
+          KPI 7 derived — CLV benchmarking tier. Shows where this account holder ranks relative to all others.
+          
+          Values: Top 10%, Top 25%, Above Median, Below Median, Bottom 25%
+          
+          Calculated using percentile_cont() window function.
+        tests: 
+          - accepted_values:
+              arguments:
+                values: ['Top 10%', 'Top 25%', 'Above Median', 'Below Median', 'Bottom 25%']
+
+      # KPI 8: Average Transaction Value (ATV)
+      - name: atv_usd
+        description: |
+          KPI 8 — Average Transaction Value (ATV) in USD.
+          
+          Business Definition: Mean payment value per transaction for this account holder.
+          
+          Formula: SUM(total_paid_usd) / COUNT(DISTINCT order_id) = clv_usd / total_transactions
+
+      # KPI 9: Transaction Success Rate (customer level)
+      - name: transaction_success_rate_pct
+        description: |
+           KPI 9 — Transaction Success Rate per account holder (%).
+           
+           Business Definition: Percentage of this account holder's transactions that were successfully delivered.
+           
+           Formula: successful_transactions / total_transactions * 100
+          
+           Note: Customers with low success rate are candidates for outreach or payment method review.
+
+      - name: failed_transactions
+        description: "Count of failed/canceled transactions for this account holder."
+
+      - name: successful_transactions
+        description: "Count of successfully delivered transactions for this account holder."
+
+      # KPI 10: Payment Installment Rate (customer level)
+      - name: installment_rate_pct
+        description: | 
+          KPI 10 — Payment Installment Rate per account holder (%).
+
+          Business Definition: Percentage of this account holder's transactions that used installment payment plans (max_installments > 1).
+
+          Formula: installment_transaction_count / total_transactions * 100
+
+          Risk interpretation:
+            >= 75% = High Risk (heavy credit dependency)
+            >= 40% = Medium Risk
+            < 40%  = Low Risk
+
+      - name: payment_risk_tier
+        description: | 
+          KPI 10 derived — Risk classification based on installment behaviour.
+          
+          Values: High Risk, Medium Risk, Low Risk
+        tests: 
+          - accepted_values:
+              arguments:
+                values: ['High Risk', 'Medium Risk', 'Low Risk']
+
+      # KPI 11: Avg Days to Approval (customer level)
+      - name: avg_days_to_approval
+        description: |
+          KPI 11 — Average Days to Payment Approval per account holder.
+          
+          Business Definition: Mean calendar days between transaction initiation and approval across all this account holder's transactions.
+
+          Formula: AVG(days_to_approval) per customer_unique_id
+
+          Use case: Account holders with consistently high approval delays may indicate payment method issues or gateway routing problems.
+
+      # KPI 12: Customer Tenure & Repeat Payer Rate
+      - name: customer_tenure_days
+        description: | 
+          KPI 12 component — Days between first and last transaction.
+          
+          Formula: DATE_DIFF('day', first_transaction_date, last_transaction_date)
+
+      - name: is_repeat_payer
+        description: |
+          KPI 12 — Repeat Payer flag
+
+          Business Definition: True if the account holder has made more than one transaction on the platform.
+
+          Formula: CASE WHEN total_transactions > 1 THEN true ELSE false END
+
+          Aggregation: SUM(is_repeat_payer) / COUNT(*) = Repeat Payer Rate %
+          This is a key retention metric for the platform.
+
+      - name: cohort_month
+        description: |
+          KPI 12 derived — Calendar month of the account holder's first transaction.
+          
+          Used for cohort retention analysis: tracking what % of each cohort
+          returns in subsequent months.
+          
+          Formula: DATE_TRUNC('month', first_transaction_date)

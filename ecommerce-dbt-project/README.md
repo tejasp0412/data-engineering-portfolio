@@ -38,7 +38,7 @@ Marts (Business-Ready Facts & Dimensions)
 ## Lineage
 
 ![DAG](docs/lineage.png)
-![alt text](../../dbt/dbt-dag.png)
+![alt text](image-1.png)
 
 ## Quick Start
 

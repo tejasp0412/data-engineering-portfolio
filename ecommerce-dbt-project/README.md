@@ -1,6 +1,6 @@
-# Marketplace Payment Platform — Analytics Pipeline
+# Marketplace Platform Payment Analytics Pipeline
 
-End-to-end analytics pipeline on the Olist Brazilian e-commerce dataset, reframed as a **Marketplace Payment Processing Platform**. Covers automated FX ingestion, dbt modelling, data quality checks, and a 4-page Looker Studio dashboard.
+End-to-end analytics pipeline on the Olist Brazilian e-commerce dataset, reframed as a **Marketplace Platform Payment Analytics**. Covers automated FX ingestion, dbt modelling, data quality checks, and a 4-page Looker Studio dashboard.
 
 🔗 **[View Live Dashboard](https://lookerstudio.google.com/u/0/reporting/1360e164-0def-4086-bec1-4d9b6b360469/page/IjlpF)**
 
